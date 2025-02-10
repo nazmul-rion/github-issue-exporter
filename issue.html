@@ -1,166 +1,229 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Issue List</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GitHub-Style Issue Tracker</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            color: #333;
-            padding: 20px;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .issue {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
-            border-left: 5px solid #4CAF50;
-        }
-        .issue h2 {
-            color: #333;
-            margin-top: 0;
-        }
-        .issue p {
-            line-height: 1.6;
-        }
-        .issue .comments {
-            margin-top: 15px;
-            padding-left: 20px;
-            border-left: 3px solid #ddd;
-        }
-        .comment {
-            background-color: #f9f9f9;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .comment p {
-            margin: 5px 0;
-        }
-        .comment .author {
-            font-weight: bold;
-            color: #4CAF50;
-        }
-        .comment .date {
-            font-size: 0.9em;
-            color: #888;
-        }
-        .comment .body {
-            margin-top: 5px;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-        }
+      body {
+        background-color: #f6f8fa;
+      }
+
+      .issue-card {
+        background: white;
+        border: 1px solid #d0d7de;
+        padding: 16px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        cursor: pointer;
+      }
+
+      .issue-title {
+        font-size: 20px;
+        font-weight: bold;
+        color: #0969da;
+      }
+
+      .badge-open {
+        background-color: #2da44e;
+        color: white;
+        font-size: 12px;
+        padding: 5px 8px;
+        border-radius: 20px;
+      }
+
+      .badge-closed {
+        background-color: #cf222e;
+        color: white;
+        font-size: 12px;
+        padding: 5px 8px;
+        border-radius: 20px;
+      }
+
+      .comment-box {
+        border-left: 3px solid #d0d7de;
+        padding-left: 10px;
+        margin-top: 10px;
+      }
+
+      .filter-btn {
+        cursor: pointer;
+      }
+
+      img {
+        max-width: 100%;
+        display: block;
+        padding: 10px 0;
+        height: auto;
+      }
+
+      .issue-number {
+        font-size: 20px;
+        font-weight: bold;
+        color: #0057bb;
+      }
+
+      code {
+        padding: 2px 5px;
+
+        background-color: #656c7633;
+        border-radius: 0.375rem;
+        color: black;
+      }
+      a {
+        color: #0366d6;
+      }
     </style>
-</head>
-<body>
-
-    <h1>GitHub Issue List</h1>
-    <div id="issues-container"></div>
-
     <script>
-        // Function to render issues dynamically
-        async function fetchIssues() {
-            try {
-                const response = await fetch('issues_with_comments_and_images.json'); // Fetch the JSON file
-                const issuesData = await response.json(); // Parse the JSON data
+      let issues = [];
 
-                // Now render the issues
-                renderIssues(issuesData);
-            } catch (error) {
-                console.error("Error fetching the issues data:", error);
-                alert("There was an error loading the issues.");
-            }
+      async function fetchIssues() {
+        try {
+          const response = await fetch("issues_with_comments_and_images.json");
+          issues = await response.json();
+          displayIssues(issues);
+        } catch (error) {
+          console.error("Error fetching the issues data:", error);
+          alert("There was an error loading the issues.");
         }
+      }
 
-        // Function to render issues dynamically
-        function renderIssues(issuesData) {
-            const container = document.getElementById('issues-container');
-            issuesData.forEach(issue => {
-                // Create the issue container
-                const issueDiv = document.createElement('div');
-                issueDiv.classList.add('issue');
-                
-                const numberAndState = document.createElement('h3');
-                numberAndState.innerHTML = `<strong>Issue #${issue.number}</strong> - State: ${issue.state==="OPEN" ? `<span style="color: green;">Open</span>` : `<span style="color: red;">Closed</span>`}`;
-                issueDiv.appendChild(numberAndState);
+      function fixBodyForImages(markdown) {
+        return markdown.replace(
+          /!\[.*?\]\(https:\/\/github\.com\/user-attachments\/assets\/([\w-]+)\)/g,
+          "![](./downloaded_images/$1)" // Replace with local path
+        );
+      }
 
-                // Title and number
-                const title = document.createElement('h2');
-                title.textContent = issue.title;
-                issueDiv.appendChild(title);
+      function displayIssues(issues) {
+        const issueContainer = document.getElementById("issue-list");
+        issueContainer.innerHTML = "";
 
-                
+        issues.forEach((issue) => {
+          const issueCard = document.createElement("div");
+          issueCard.classList.add("issue-card");
 
-                // Body - converting Markdown images into HTML <img> tags
-                const body = document.createElement('p');
-                body.innerHTML = processBodyText(issue.body);
-                issueDiv.appendChild(body);
+          issueCard.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center" onclick="toggleCollapse('issue-${
+                      issue.number
+                    }')">
+                        <div>
+                            <b class="issue-number">#${issue.number}</b>
+                            <i class="fa-solid ${
+                              issue.state === "OPEN"
+                                ? "fa-exclamation-circle text-success"
+                                : "fa-check-circle text-danger"
+                            }"></i>
+                            <span class="issue-title">${issue.title}</span>
+                            <span class="${
+                              issue.state === "OPEN"
+                                ? "badge-open"
+                                : "badge-closed"
+                            }">${issue.state}</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
 
-                // Comments Section
-                if (issue.comments.length > 0) {
-                    const commentsDiv = document.createElement('div');
-                    commentsDiv.classList.add('comments');
+                    <div id="issue-${issue.number}" class="collapse mt-2">
+                        
+                        <p>${marked.parse(fixBodyForImages(issue.body))}</p>
 
-                    issue.comments.forEach(comment => {
-                        const commentDiv = document.createElement('div');
-                        commentDiv.classList.add('comment');
+                        <button class="btn btn-sm btn-outline-secondary mt-2" onclick="toggleCollapse('comments-${
+                          issue.number
+                        }')">
+                            <i class="fa-solid fa-comments"></i> Show Comments ( ${
+                              issue.comments.length
+                            } )
+                        </button>
 
-                        const author = document.createElement('p');
-                        author.classList.add('author');
-                        author.innerHTML = `${comment.author} <span class="date">(${comment.date})</span>`;
-                        commentDiv.appendChild(author);
+                        <div id="comments-${
+                          issue.number
+                        }" class="collapse mt-2">
+                            ${
+                              issue.comments.length > 0
+                                ? issue.comments
+                                    .map(
+                                      (comment) => `
+                                <div class="comment-box">
+                                    <strong>
+                                        <a class="text-black fs-5" href="https://github.com/${
+                                          comment.author
+                                        }" target="_blank">${comment.author}</a>
+                                    </strong>
+                                    <p>${marked.parse(comment.body)}</p>
+                                </div>
+                            `
+                                    )
+                                    .join("")
+                                : "<p>No comments available.</p>"
+                            }
+                        </div>
+                    </div>
+                `;
 
-                        const body = document.createElement('p');
-                        body.classList.add('body');
-                        body.textContent = comment.body;
-                        commentDiv.appendChild(body);
+          issueContainer.appendChild(issueCard);
+        });
+      }
 
-                        commentsDiv.appendChild(commentDiv);
-                    });
-
-                    issueDiv.appendChild(commentsDiv);
-                }
-
-                container.appendChild(issueDiv);
-            });
+      function toggleCollapse(id) {
+        const element = document.getElementById(id);
+        if (element) {
+          element.classList.toggle("collapse");
         }
+      }
 
-        // Function to process body text and convert Markdown-style images to <img> tags
-        function processBodyText(text) {
-            // Regex to match Markdown image syntax (e.g. ![Image](url))
-            const regex = /!\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
-            
-            // Replace Markdown images with <img> tags pointing to the local 'downloaded_images' folder
-            return text.replace(regex, (match, altText, url) => {
-                // Extract image name from the URL
-                const imageName = url.split('/').pop();  // Get the last part of the URL as the image file name
+      function filterIssues(state) {
+        const filteredIssues =
+          state === "ALL"
+            ? issues
+            : issues.filter((issue) => issue.state === state);
+        displayIssues(filteredIssues);
+      }
 
-                // Check if the image has an extension and handle accordingly
-                const imageExtension = imageName.split('.').pop();
-                const imagePath = `./downloaded_images/${imageName}`;
-
-                // Debugging: log the URL and local path to verify
-                console.log("Original URL:", url);  // Check the original URL
-                console.log("Local Image Path:", imagePath);  // Check the local image path
-                
-                // Return HTML <img> tag
-                return `<img src="${imagePath}" alt="${altText}" style="max-width: 100%; height: auto;">`;
-            }).replace(/\n/g, '<br>'); // Replace line breaks with <br> tags
-        }
-
-        // Call the fetchIssues function when the page loads
-        fetchIssues();
+      document.addEventListener("DOMContentLoaded", fetchIssues);
     </script>
+  </head>
 
-</body>
+  <body class="container-fluid mt-4">
+    <h2 class="text-center">
+      <i class="fa-solid fa-bug"></i> GitHub-Style Issue Tracker
+    </h2>
+    
+    <div class="d-flex justify-content-center">
+      <div class="dropdown mb-3">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fa-solid fa-filter"></i> Filter Issues
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="filterDropdown">
+            <li><a class="dropdown-item text-success" href="#" onclick="filterIssues('OPEN')">
+                <i class="fa-solid fa-exclamation-circle"></i> Open Issues
+            </a></li>
+            <li><a class="dropdown-item text-danger" href="#" onclick="filterIssues('CLOSED')">
+                <i class="fa-solid fa-check-circle"></i> Closed Issues
+            </a></li>
+            <li><a class="dropdown-item text-secondary" href="#" onclick="filterIssues('ALL')">
+                <i class="fa-solid fa-list"></i> All Issues
+            </a></li>
+        </ul>
+    </div>
+    </div>
+  
+    <div id="issue-list"></div>
+
+    <footer class="text-center mt-4">
+      Developed by <a href="https://github.com/nazmul-rion" target="_blank">Nazmul Islam Rion</a>
+    </footer>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
 </html>

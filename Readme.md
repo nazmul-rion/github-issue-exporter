@@ -20,8 +20,8 @@ Ensure you have the following installed on your system:
 
 ### Clone the Repository
 ```sh
- git clone https://github.com/nazmul-rion/github-issue-exporter.git
- cd github-issue-exporter
+ git clone https://github.com/nazmul-rion/github-issue-tracker.git
+ cd github-issue-tracker
 ```
 
 ### Generating a GitHub Personal Access Token (PAT)

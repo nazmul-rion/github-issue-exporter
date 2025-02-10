@@ -82,6 +82,8 @@ Simply open `index.html` in your browser to view the issues in a GitHub-style in
 - GitHub CLI: `gh`
 - Web Technologies: Bootstrap 5, Font Awesome, Marked.js
 
+If you find this project useful, please ⭐ star it on [GitHub](https://github.com/nazmul-rion/github-issue-tracker)!
+
 ## Author
 Developed by [Nazmul Islam Rion](https://github.com/nazmul-rion)
 
